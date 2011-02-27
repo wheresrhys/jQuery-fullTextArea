@@ -1,4 +1,5 @@
 jQuery.fn.fullTextArea = function(options) {
+	
 	var defaults = {
 		mode: 'focus',
 		class: ''
@@ -83,12 +84,12 @@ jQuery.fn.fullTextArea = function(options) {
 
 		//preselect text
 		$(textarea).focus(function() {
-			if(this.value == 'xxtext_hereyy')//get by ajax or hidden variable
+			if(this.value == $(original).text())//text holds the default value
 			{
 				this.select();
 			}
 		});
-		$(textarea).focus();
+
 
 		//create buttons
 		buttons = $('<div>').addClass("overlay_buttons").css({
@@ -126,6 +127,7 @@ jQuery.fn.fullTextArea = function(options) {
 			{
 				$('select').css({visibility:'hidden'});
 			}
+		$(textarea).focus();
 		//make sure stays visible even when scrolling
 		$(window).scroll(function () { 
 			$(overlay).css({
