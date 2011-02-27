@@ -128,6 +128,12 @@ jQuery.fn.fullTextArea = function(options) {
 				$('select').css({visibility:'hidden'});
 			}
 		$(textarea).focus();
+		
+		//disable  clicks on anything else. but how?
+		$('*').click(disable);
+		$('*').focus(disable);
+		$('*').dblclick(disable);
+		$('*').select(disable);
 		//make sure stays visible even when scrolling
 		$(window).scroll(function () { 
 			$(overlay).css({
@@ -143,6 +149,8 @@ jQuery.fn.fullTextArea = function(options) {
 				height:$(window).height()
 			});                 
 		});
+		
+		
 
 		//handle button clicks
 		$(cancel).click(function() {
@@ -173,7 +181,17 @@ jQuery.fn.fullTextArea = function(options) {
 			});
 			$(textarea).focus(); 
 		});		
+
+		function disable() {
+			if(((this !== textarea) &&(this !== save ))&&((this !== undo) &&(this !== cancel )))
+				{
+					return false;
+				}
+		};
+
 	};
+	
+
 };
 
 
