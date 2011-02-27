@@ -1,6 +1,6 @@
 // ----------------------------------------------------------------------------
 // fullTextArea - A jQuery Plugin to enable even small text areas to be used to inpuy lage amounts of text easily
-// v 0.3.2, requires jQuery 1.3.2 or later (may work with earlier versions, but untested)
+// v 0.4, requires jQuery 1.3.2 or later (may work with earlier versions, but untested)
 //
 // Dual licensed under the MIT and GPL licenses.
 // ----------------------------------------------------------------------------
@@ -30,171 +30,120 @@
 //
 //           $('textarea').crossSelect(); 
 //  
-// The plugin takes 5 optional parameters in JSON form:
+// The plugin takes 6 optional parameters in JSON form:
 // 		mode - default value = "focus" . Other possible values: "button" - changes whether the full screen textarea appears on focus or by clicking a button
 //		cssClass - default value =  "fta_overlay". Other possible values: Any string you want as the class of eth containing div for the plugin
 //		save_txt: "Save" -the text on the save button
 //		undo_txt:"Start again" -the text on the undo changes button
 //		cancel_txt:"Cancel" -  -the text on the cancel button
-//  NEW IN VERSION 0.3.2 
-//  - Fixed ie bug
+//		editFS_text:"Edit full screen" - the text on the edit full screen button
+//
+//		eg $('textarea').crossSelect({undo_txt:'Undo your changes so far', mode:'button'}); 
+//  
+//  NEW IN VERSION 0.4 
+//  - Shouldn't conflict with other frameworks using the $ shorthand
+//  - Lots of optimisation
 
 
 // ----------------------------------------------------------------------------
 
-jQuery.fn.fullTextArea = function(options) {
-	
-	var defaults = {
-		mode: "focus",
-		cssClass: "fta_overlay",
-		save_txt: "Save",
-		undo_txt:"Start again",
-		cancel_txt:"Cancel"
-	};
-	var opts = $.extend(defaults, options);
-	
-	if(opts.mode == 'focus') {
-		return this.each(function(){
-			$(this).focus(createOverlay);
-		});
-	} else if(opts.mode == 'button') {
-		return this.each(function(){
-			createButton(this);
-			$(this).siblings('input').click(createOverlay);
-		});
-	}
-
-	function createButton(ta) {
-		var tot_width =  $(ta).width();
-		fsb = $('<input>').attr({type:'button',value:'Edit full screen'})
-						.css({'margin-left':'5px', width:Math.max(tot_width/4,60)});
-		$(ta).width((tot_width - Math.max(tot_width/4,60)) - 5)
-			.wrap("<div></div>");
-		$(ta).closest("div").append(fsb);
-	}
-
-	function createOverlay() {		
-		//keep track of what is going to be changed
-		var original = this;
-		if(opts.mode === 'button')
-		{
-			original = $(this).siblings('textarea');
+(function($) { 
+	$.fn.fullTextArea = function(options) {
+		this.defaults = {
+			mode: "focus",
+			cssClass: "fta_overlay",
+			save_txt: "Save",
+			undo_txt:"Start again",
+			cancel_txt:"Cancel",
+			editFS_txt:"Edit full screen",
+		};
+		
+		var pars = $.extend(this.defaults, options);
+		
+		if(pars.mode == 'focus') {
+			return this.each(function(){
+				$(this).focus(createOverlay);
+			});
+		} else if(pars.mode == 'button') {
+			return this.each(function(){
+				createButton(this);
+				$(this).siblings('input').click(createOverlay);
+			});
 		}
-		var text = $(original).val();
 
-		//create transparent overlay
-		var overlay = $('<div>').css({
-			position:"absolute",
-			"z-index":200,
-			left:0,
-			top:$(window).scrollTop(),
-			width: $(window).width(),
-			height: $(window).height(),
-			'background-color':'black',
-			opacity: '0.5'
-		}).bgIframe();
+		function createButton(ta) {
+			var tot_width =  $(ta).width();
+			$(ta).width((tot_width - Math.max(tot_width/4,60)) - 5)
+				   .wrap("<div></div>")
+				   .parent().append('<input type="button" value="'+pars.editFS_txt+'" style="margin-left:5px; width:'+Math.max(tot_width/4,60)+'px">');
+		}
 
-		//create holder for elements
-		var form_holder = $('<div>').css({
-			position:"absolute",
-			"z-index":202,
-			left:0,
-			top:$(window).scrollTop(),
-			width: $(window).width(),
-			height: $(window).height(),
-			'background-color':'transparent'
-		}).addClass(opts.cssClass);
-
-		//create large textarea
-		var textarea = $('<textarea>').text(text)
-		.css({
-			width:$(window).width()*0.6,
-			height:$(window).height()*0.8,
-			'left':$(window).width()*0.2,
-			'top':$(window).height()*0.1,
-			position:'absolute',
-			background:'#f8f8f8',
-			border:'1px solid #020202'
-		});
-
-		//preselect text
-		$(textarea).focus(function() {
-			if(this.value == $(original).text())//text holds the default value
+		function createOverlay() {		
+			//keep track of what is going to be changed
+			var original = this;
+			if(pars.mode === 'button')
 			{
-				this.select();
+				original = $(this).siblings('textarea');
 			}
-		});
+			var text = $(original).val();
 
-		//create buttons
-		var buttons = $('<div>').addClass("fta_buttons").css({
-			position:"absolute",
-			width: $(window).width()*0.2,
-			bottom:$(window).height()*0.1,
-			right:0,
-			'margin-bottom':'-3px'
-		});
+			//create transparent overlay
+			var overlay = $('<div style="position:absolute;z-index:200;left:0;background-color:black;opacity:0.5; top:'+$(window).scrollTop()+'px;width:'+$(window).width()+'px;height:'+$(window).height()+'px">').bgIframe();
 
-		var save = $('<input>').attr({
-			type: "button",
-			value: opts.save_txt
-		}).css({width:'45%'});
-
-		var cancel = $('<input>').attr({
-			type: "button",
-			value: opts.cancel_txt
-		}).css({width:'45%'});
-
-		var undo = $('<input>').attr({
-			type: "button",
-			value: opts.undo_txt
-		}).css({width:'93%'});
-
-		//add elements to document
-		$(buttons).append(undo);
-		$(buttons).append(cancel);
-		$(buttons).append(save);
-		$(form_holder).append(textarea);
-		$(form_holder).append(buttons);
-		$("body").append(overlay);
-		$("body").append(form_holder); 
-		$(textarea).focus();
-
-		//make sure stays visible even when scrolling
-		$(window).scroll(function () { 
-			$(overlay).css({
-				top:$(window).scrollTop(),
-				height:$(window).height()
-			});
-			$(textarea).css({                
-				'top':$(window).height()*0.1,
-				height:$(window).height()*0.8
-			});
-			$(form_holder).css({
-				'top':$(window).scrollTop(),
-				height:$(window).height()
-			});                 
-		});
-
-		//handle button clicks
-		$(cancel).click(function() {
-			$(overlay).remove();
-			$(form_holder).remove();
-		});   
-		$(save).click(function() {
-			$(original).val($(textarea).val());
-			$(overlay).remove();
-			$(form_holder).remove();
-		});
-
-		$(undo).click(function() {
-			$(textarea).val(text);
-			$(textarea).focus(function() {
-			if(this.value == $(original).text())
+			//add elements to document
+			var form_holder = $('<div style="position:absolute;z-index:202;left:0;background-color:transparent; top:'+$(window).scrollTop()+'px;width:'+$(window).width()+'px;height:'+$(window).height()+'px" class="'+pars.cssClass+'"><textarea style="width:'+$(window).width()*0.6+'px;height:'+$(window).height()*0.8+'px;left:'+$(window).width()*0.2+'px;top:'+$(window).height()*0.1+'px;	position:absolute;background:#f8f8f8;	border:1px solid #020202" value="'+text+'">'+text+'</textarea><div class="fta_buttons" style="position:absolute;width:'+$(window).width()*0.2+'px;bottom:'+$(window).height()*0.1+'px;right:0px;margin-bottom:-3px"><input type="button" class="undo" value="'+pars.undo_txt+'" style="width:93%" /><input type="button" class="cancel" value="'+pars.cancel_txt+'" style="width:45%" /><input type="button" class="save" value="'+pars.save_txt+'" style="width:45%" /></div></div>');
+			$("body").append(overlay);
+			$("body").append(form_holder);
+			
+			//keep track of important dom elements
+			var textarea = $('textarea', form_holder)[0];
+			var buttons = $('.fta_buttons', form_holder);
+			var save = $('.save',buttons);
+			var cancel = $('.cancel',buttons);
+			var undo = $('.undo',buttons);
+			$(textarea).focus();
+			
+			//preselect text
+			$(textarea).focus(preselectText());
+			
+			function preselectText() {
+				if(textarea.value == $(original).text())//text holds the default value
 				{
-					this.select();
+					textarea.select();
 				}
+			}			
+			
+			//make sure stays visible even when scrolling
+			$(window).scroll(function () { 
+				$(overlay).css({
+					top:$(window).scrollTop(),
+					height:$(window).height()
+				});
+				$(textarea).css({                
+					top:$(window).height()*0.1,
+					height:$(window).height()*0.8
+				});
+				$(form_holder).css({
+					top:$(window).scrollTop(),
+					height:$(window).height()
+				});                 
 			});
-			$(textarea).focus(); 
-		});		
+
+			//handle button clicks
+			$(cancel).click(function() {
+				$(overlay).remove();
+				$(form_holder).remove();
+			});   
+			$(save).click(function() {
+				$(original).val($(textarea).val());
+				$(overlay).remove();
+				$(form_holder).remove();
+			});
+			$(undo).click(function() {
+				$(textarea).val(text);
+				//$(textarea).focus(preselectText);
+				$(textarea).focus(); 
+			});		
+		};
 	};
-};
+})(jQuery);
